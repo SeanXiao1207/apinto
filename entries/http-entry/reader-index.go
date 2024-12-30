@@ -38,8 +38,17 @@ func (p ProxyReaders) ReadByIndex(index int, name string, ctx http_service.IHttp
 }
 
 func (p ProxyReaders) Read(name string, ctx http_service.IHttpContext) (interface{}, bool) {
+	v, ok := p[name]
+	if ok {
+		proxies := ctx.Proxies()
+		proxyLen := len(proxies)
+		if proxyLen == 0 {
+			return v.ReadRequest("", ctx.Proxy())
+		}
+		return v.ReadProxy("", proxies[proxyLen-1])
+	}
 	ns := strings.SplitN(name, "_", 2)
-	v, ok := p[ns[0]]
+	v, ok = p[ns[0]]
 	if !ok {
 		return "", false
 	}
@@ -52,4 +61,23 @@ func (p ProxyReaders) Read(name string, ctx http_service.IHttpContext) (interfac
 		return v.ReadProxy(ns[1], proxies[proxyLen-1])
 	}
 	return v.ReadProxy("", proxies[proxyLen-1])
+}
+
+type proxyReader struct {
+	ProxyReadFunc
+	ProxyReadRequestFunc
+}
+
+func (p *proxyReader) ReadRequest(name string, proxy http_service.IRequest) (interface{}, bool) {
+	if p.ProxyReadRequestFunc == nil {
+		return "", false
+	}
+	return p.ProxyReadRequestFunc(name, proxy)
+}
+
+func (p *proxyReader) ReadProxy(name string, proxy http_service.IProxy) (interface{}, bool) {
+	if p.ProxyReadFunc == nil {
+		return "", false
+	}
+	return p.ProxyReadFunc(name, proxy)
 }

@@ -18,10 +18,14 @@ var notFound = new(HttpNotFoundHandler)
 var completeCaller = http_complete.NewHttpCompleteCaller()
 
 type IManger interface {
-	Set(id string, port int, hosts []string, method []string, path string, append []AppendRule, router router.IRouterHandler) error
+	Set(id string, port int, protocols []string, hosts []string, method []string, path string, append []AppendRule, router router.IRouterHandler) error
 	Delete(id string)
+	AddPreRouter(id string, method []string, path string, handler router.IRouterPreHandler)
+	DeletePreRouter(id string)
 }
+
 type Manager struct {
+	IPreRouterData
 	lock    sync.RWMutex
 	matcher router.IMatcher
 
@@ -35,13 +39,17 @@ func (m *Manager) SetGlobalFilters(globalFilters *eoscContext.IChainPro) {
 
 // NewManager 创建路由管理器
 func NewManager() *Manager {
-	return &Manager{routersData: new(RouterData)}
+	return &Manager{routersData: new(RouterData),
+		IPreRouterData: newImlPreRouterData()}
 }
 
-func (m *Manager) Set(id string, port int, hosts []string, method []string, path string, append []AppendRule, router router.IRouterHandler) error {
+func (m *Manager) Set(id string, port int, protocols []string, hosts []string, method []string, path string, append []AppendRule, router router.IRouterHandler) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	routersData := m.routersData.Set(id, port, hosts, method, path, append, router)
+	if len(protocols) == 0 {
+		protocols = []string{"http", "https"}
+	}
+	routersData := m.routersData.Set(id, port, protocols, hosts, method, path, append, router)
 	matchers, err := routersData.Parse()
 	if err != nil {
 		log.Error("parse router data error: ", err)
@@ -68,6 +76,9 @@ func (m *Manager) Delete(id string) {
 
 func (m *Manager) FastHandler(port int, ctx *fasthttp.RequestCtx) {
 	httpContext := http_context.NewContext(ctx, port)
+	if !m.IPreRouterData.Server(httpContext) {
+		return
+	}
 	if m.matcher == nil {
 		httpContext.SetFinish(notFound)
 		httpContext.SetCompleteHandler(notFound)
@@ -77,7 +88,7 @@ func (m *Manager) FastHandler(port int, ctx *fasthttp.RequestCtx) {
 		}
 		return
 	}
-	log.Debug("port is ", port, " request: ", httpContext.Request())
+	//log.Debug("port is ", port, " request: ", httpContext.Request())
 	r, has := m.matcher.Match(port, httpContext.Request())
 	if !has {
 		httpContext.SetFinish(notFound)
@@ -88,7 +99,7 @@ func (m *Manager) FastHandler(port int, ctx *fasthttp.RequestCtx) {
 		}
 	} else {
 		log.Debug("match has:", port)
-		r.ServeHTTP(httpContext)
+		r.Serve(httpContext)
 	}
 	finishHandler := httpContext.GetFinish()
 	if finishHandler != nil {

@@ -119,11 +119,14 @@ func (r *ResponseHeader) reset(header *fasthttp.ResponseHeader) {
 func (r *ResponseHeader) refresh() {
 	tmp := make(http.Header)
 	hs := strings.Split(r.header.String(), "\r\n")
-	for _, t := range hs {
+	for i, t := range hs {
+		if i == 0 {
+			continue
+		}
 		if strings.TrimSpace(t) == "" {
 			continue
 		}
-		vs := strings.Split(t, ":")
+		vs := strings.SplitN(t, ":", 2)
 		if len(vs) < 2 {
 			if vs[0] == "" {
 				continue

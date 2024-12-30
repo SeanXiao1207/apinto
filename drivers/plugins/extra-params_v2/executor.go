@@ -99,7 +99,10 @@ func addParamToBody(ctx http_service.IHttpContext, contentType string, params []
 			}
 		}
 
-		b, _ := oj.Marshal(bodyParam)
+		b, err := oj.Marshal(bodyParam)
+		if err != nil {
+			return nil, err
+		}
 		ctx.Proxy().Body().SetRaw(contentType, b)
 		return bodyParam, nil
 	} else if contentType == "application/x-www-form-urlencoded" || contentType == "multipart/form-data" {
@@ -126,10 +129,16 @@ func addParamToBody(ctx http_service.IHttpContext, contentType string, params []
 	return nil, nil
 }
 
+const (
+	JsonBodyType              = "json"
+	FormDataBodyType          = "form-data"
+	MultipartFormDataBodyType = "multipart-formdata"
+)
+
 var contentTypeMap = map[string]string{
-	"json":               "application/json",
-	"form-data":          "application/x-www-form-urlencoded",
-	"multipart-formdata": "multipart/form-data",
+	JsonBodyType:              "application/json",
+	FormDataBodyType:          "application/x-www-form-urlencoded",
+	MultipartFormDataBodyType: "multipart/form-data",
 }
 
 func (e *executor) access(ctx http_service.IHttpContext) (int, error) {

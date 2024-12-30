@@ -11,9 +11,9 @@ const (
 
 type IService interface {
 	eosc.IWorker
-	eoscContext.EoApp
 	eoscContext.BalanceHandler
 	eoscContext.UpstreamHostHandler
+	Title() string
 }
 
 // CheckSkill 检查目标技能是否符合

@@ -1,6 +1,7 @@
 package http_router
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -75,7 +76,7 @@ func (h *HttpRouter) reset(cfg *Config, workers map[eosc.RequireId]eosc.IWorker)
 		if cfg.Template != "" {
 			templateWorker, has := workers[cfg.Template]
 			if !has || !templateWorker.CheckSkill(template.TemplateSkill) {
-				return eosc.ErrorNotGetSillForRequire
+				return fmt.Errorf("target name: %s ,error: %w", cfg.Template, eosc.ErrorNotGetSillForRequire)
 			}
 			tp := templateWorker.(template.ITemplate)
 			plugins = tp.Create(h.id, cfg.Plugins)
@@ -94,7 +95,7 @@ func (h *HttpRouter) reset(cfg *Config, workers map[eosc.RequireId]eosc.IWorker)
 			}
 			serviceWorker, has := workers[eosc.RequireId(s)]
 			if !has || !serviceWorker.CheckSkill(service.ServiceSkill) {
-				return eosc.ErrorNotGetSillForRequire
+				return fmt.Errorf("target name: %s ,error: %w", s, eosc.ErrorNotGetSillForRequire)
 			}
 			serviceHandler := serviceWorker.(service.IService)
 			handler.service = serviceHandler
@@ -115,7 +116,7 @@ func (h *HttpRouter) reset(cfg *Config, workers map[eosc.RequireId]eosc.IWorker)
 			Pattern: r.Value,
 		})
 	}
-	err := h.routerManager.Set(h.id, cfg.Listen, cfg.Host, methods, cfg.Path, appendRule, handler)
+	err := h.routerManager.Set(h.id, cfg.Listen, cfg.Protocols, cfg.Host, methods, cfg.Path, appendRule, handler)
 	if err != nil {
 		return err
 	}

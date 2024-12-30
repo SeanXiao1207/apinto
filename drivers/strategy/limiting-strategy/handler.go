@@ -1,8 +1,9 @@
 package limiting_strategy
 
 import (
-	"github.com/eolinker/apinto/metrics"
 	"github.com/eolinker/apinto/strategy"
+	"github.com/eolinker/apinto/utils/response"
+	"github.com/eolinker/eosc/metrics"
 )
 
 type ThresholdUint struct {
@@ -16,7 +17,7 @@ type LimitingHandler struct {
 	metrics  metrics.Metrics
 	query    ThresholdUint
 	traffic  ThresholdUint
-	response StrategyResponseConf
+	response response.IResponse
 	priority int
 	stop     bool
 }
@@ -37,7 +38,7 @@ func (l *LimitingHandler) Priority() int {
 	return l.priority
 }
 
-func (l *LimitingHandler) Response() StrategyResponseConf {
+func (l *LimitingHandler) Response() response.IResponse {
 	return l.response
 }
 
@@ -45,21 +46,21 @@ func (l *LimitingHandler) Stop() bool {
 	return l.stop
 }
 
-func NewLimitingHandler(conf *Config) (*LimitingHandler, error) {
+func NewLimitingHandler(name string, conf *Config) (*LimitingHandler, error) {
 	filter, err := strategy.ParseFilter(conf.Filters)
 	if err != nil {
 		return nil, err
 	}
 
-	mts := metrics.Parse(conf.Rule.Metrics)
+	mts := metrics.ParseArray(conf.Rule.Metrics, "-")
 
 	return &LimitingHandler{
-		name:     conf.Name,
+		name:     name,
 		filter:   filter,
 		metrics:  mts,
 		query:    parseThreshold(conf.Rule.Query),
 		traffic:  parseThreshold(conf.Rule.Traffic, 1024*1024),
-		response: conf.Rule.Response,
+		response: response.Parse(&conf.Rule.Response),
 		priority: conf.Priority,
 		stop:     conf.Stop,
 	}, nil

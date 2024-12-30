@@ -1,16 +1,30 @@
 package main
 
 import (
+	access_relational "github.com/eolinker/apinto/drivers/plugins/access-relational"
+	"github.com/eolinker/apinto/drivers/plugins/acl"
+	ai_formatter "github.com/eolinker/apinto/drivers/plugins/ai-formatter"
+	ai_prompt "github.com/eolinker/apinto/drivers/plugins/ai-prompt"
 	"github.com/eolinker/apinto/drivers/plugins/app"
+	auto_redirect "github.com/eolinker/apinto/drivers/plugins/auto-redirect"
 	"github.com/eolinker/apinto/drivers/plugins/cors"
 	data_transform "github.com/eolinker/apinto/drivers/plugins/data-transform"
 	dubbo2_proxy_rewrite "github.com/eolinker/apinto/drivers/plugins/dubbo2-proxy-rewrite"
 	extra_params "github.com/eolinker/apinto/drivers/plugins/extra-params"
 	grpc_proxy_rewrite "github.com/eolinker/apinto/drivers/plugins/grpc-proxy-rewrite"
 	"github.com/eolinker/apinto/drivers/plugins/gzip"
+	js_inject "github.com/eolinker/apinto/drivers/plugins/js-inject"
+	"github.com/eolinker/apinto/drivers/plugins/oauth2"
 	params_check "github.com/eolinker/apinto/drivers/plugins/params-check"
 	"github.com/eolinker/apinto/drivers/plugins/prometheus"
+	request_file_parse "github.com/eolinker/apinto/drivers/plugins/request-file-parse"
+	request_interception "github.com/eolinker/apinto/drivers/plugins/request-interception"
+	response_file_parse "github.com/eolinker/apinto/drivers/plugins/response-file-parse"
+	response_filter "github.com/eolinker/apinto/drivers/plugins/response-filter"
 	response_rewrite_v2 "github.com/eolinker/apinto/drivers/plugins/response-rewrite_v2"
+	rsa_filter "github.com/eolinker/apinto/drivers/plugins/rsa-filter"
+	script_handler "github.com/eolinker/apinto/drivers/plugins/script-handler"
+	data_mask "github.com/eolinker/apinto/drivers/plugins/strategy/data-mask"
 
 	access_log "github.com/eolinker/apinto/drivers/plugins/access-log"
 	body_check "github.com/eolinker/apinto/drivers/plugins/body-check"
@@ -47,6 +61,7 @@ func pluginRegister(extenderRegister eosc.IExtenderDriverRegister) {
 	grey.Register(extenderRegister)
 	visit.Register(extenderRegister)
 	fuse.Register(extenderRegister)
+	data_mask.Register(extenderRegister)
 
 	// Dubbo协议相关插件
 	dubbo2_proxy_rewrite.Register(extenderRegister)
@@ -68,11 +83,16 @@ func pluginRegister(extenderRegister eosc.IExtenderDriverRegister) {
 	http_mocking.Register(extenderRegister)
 	params_check.Register(extenderRegister)
 	data_transform.Register(extenderRegister)
+	request_interception.Register(extenderRegister)
+	request_file_parse.Register(extenderRegister)
 
 	// 响应处理插件
 	response_rewrite.Register(extenderRegister)
 	response_rewrite_v2.Register(extenderRegister)
+	response_filter.Register(extenderRegister)
 	gzip.Register(extenderRegister)
+	response_file_parse.Register(extenderRegister)
+	auto_redirect.Register(extenderRegister)
 
 	// 安全相关插件
 	ip_restriction.Register(extenderRegister)
@@ -80,7 +100,10 @@ func pluginRegister(extenderRegister eosc.IExtenderDriverRegister) {
 	cors.Register(extenderRegister)
 	circuit_breaker.Register(extenderRegister)
 	app.Register(extenderRegister)
-
+	rsa_filter.Register(extenderRegister)
+	js_inject.Register(extenderRegister)
+	acl.Register(extenderRegister)
+	access_relational.Register(extenderRegister)
 	// 可观测性（输出内容到第三方）
 	access_log.Register(extenderRegister)
 	prometheus.Register(extenderRegister)
@@ -89,4 +112,13 @@ func pluginRegister(extenderRegister eosc.IExtenderDriverRegister) {
 
 	// 计数插件
 	counter.Register(extenderRegister)
+
+	// 鉴权插件
+	oauth2.Register(extenderRegister)
+
+	// ai相关插件
+	ai_prompt.Register(extenderRegister)
+	ai_formatter.Register(extenderRegister)
+
+	script_handler.Register(extenderRegister)
 }

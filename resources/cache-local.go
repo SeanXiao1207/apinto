@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"sync"
 	"time"
@@ -105,7 +106,7 @@ func (n *cacheLocal) IncrBy(ctx context.Context, key string, incr int64, expirat
 	}()
 
 	v, err := n.client.Get([]byte(key))
-	if err != nil || len(v) != 8 {
+	if err != nil {
 		v = ToBytes(incr)
 		err := n.client.Set([]byte(key), v, int(expiration.Seconds()))
 		if err != nil {
@@ -130,9 +131,13 @@ func ToInt(b []byte) int64 {
 	return v
 }
 func ToBytes(v int64) []byte {
-
 	return []byte(strconv.FormatInt(v, 10))
 }
+
+func (n *cacheLocal) Keys(ctx context.Context, pattern string) StringSliceResult {
+	return NewStringSliceResult(nil, errors.New("not support"))
+}
+
 func (n *cacheLocal) Get(ctx context.Context, key string) StringResult {
 	data, err := n.client.Get([]byte(key))
 	if err != nil {
@@ -151,6 +156,14 @@ func (n *cacheLocal) GetDel(ctx context.Context, key string) StringResult {
 	return NewStringResultBytes(bytes, nil)
 }
 
+func (n *cacheLocal) HMSetN(ctx context.Context, key string, fields map[string]interface{}, expiration time.Duration) BoolResult {
+	return NewBoolResult(false, errors.New("not support"))
+}
+
+func (n *cacheLocal) HMGet(ctx context.Context, key string, fields ...string) ArrayInterfaceResult {
+	return NewArrayInterfaceResult(nil, errors.New("not support"))
+}
+
 func (n *cacheLocal) Del(ctx context.Context, keys ...string) IntResult {
 	var count int64 = 0
 	for _, key := range keys {
@@ -160,6 +173,10 @@ func (n *cacheLocal) Del(ctx context.Context, keys ...string) IntResult {
 	}
 
 	return NewIntResult(count, nil)
+}
+
+func (n *cacheLocal) Run(ctx context.Context, script interface{}, keys []string, args ...interface{}) InterfaceResult {
+	return NewInterfaceResult(nil, errors.New("not support"))
 }
 
 func newCacher() *cacheLocal {

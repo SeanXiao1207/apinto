@@ -33,6 +33,7 @@ type Request struct {
 }
 
 func (r *Request) SetHost(s string) {
+	r.headers.Set(":authority", s)
 	r.host = s
 }
 
@@ -106,7 +107,7 @@ func (r *Request) RealIP() string {
 }
 
 func (r *Request) ForwardIP() string {
-	return strings.Join(r.headers.Get("x-forwarded-for"), ";")
+	return strings.Join(r.headers.Get("x-forwarded-for"), ", ")
 }
 
 func (r *Request) Message(msgDesc *desc.MessageDescriptor) *dynamic.Message {

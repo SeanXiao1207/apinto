@@ -3,15 +3,15 @@ package grpc_context
 import (
 	"io"
 
-	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	grpc_context "github.com/eolinker/eosc/eocontext/grpc-context"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
@@ -21,12 +21,12 @@ var (
 	}
 )
 
-func (c *Context) readError(serverStream grpc.ServerStream, clientStream grpc.ClientStream, response grpc_context.IResponse) {
-	c.errChan <- handlerStream(serverStream, clientStream, response)
+func (c *Context) readError(serverStream grpc.ServerStream, clientStream grpc.ClientStream, serverHeaders *metadata.MD, trailers *metadata.MD, response grpc_context.IResponse) {
+	c.errChan <- handlerStream(serverStream, clientStream, serverHeaders, trailers, response)
 	close(c.errChan)
 }
 
-func handlerStream(serverStream grpc.ServerStream, clientStream grpc.ClientStream, response grpc_context.IResponse) error {
+func handlerStream(serverStream grpc.ServerStream, clientStream grpc.ClientStream, serverHeaders *metadata.MD, trailers *metadata.MD, response grpc_context.IResponse) error {
 
 	// Explicitly *do not close* s2cErrChan and c2sErrChan, otherwise the select below will not terminate.
 	// Channels do not have to be closed, it is just a control flow mechanism, see
@@ -51,13 +51,14 @@ func handlerStream(serverStream grpc.ServerStream, clientStream grpc.ClientStrea
 			// This happens when the clientStream has nothing else to offer (io.EOF), returned a gRPC error. In those two
 			// cases we may have received Trailers as part of the call. In case of other errors (stream closed) the trailers
 			// will be nil.
-			header, err := clientStream.Header()
-			if err != nil {
-				serverStream.SendHeader(response.Headers())
-			} else {
-				serverStream.SendHeader(metadata.Join(response.Headers(), header))
-			}
-			serverStream.SetTrailer(metadata.Join(response.Trailer(), clientStream.Trailer()))
+
+			//header, err := clientStream.Header()
+			//if err != nil {
+			//	serverStream.SendHeader(response.Headers())
+			//} else {
+			serverStream.SendHeader(metadata.Join(response.Headers(), *serverHeaders))
+			//}
+			serverStream.SetTrailer(metadata.Join(response.Trailer(), *trailers))
 			// c2sErr will contain RPC error from client code. If not io.EOF return the RPC error as server stream error.
 			if c2sErr != io.EOF {
 				return c2sErr
@@ -71,7 +72,7 @@ func handlerStream(serverStream grpc.ServerStream, clientStream grpc.ClientStrea
 func forwardClientToServer(src grpc.ClientStream, dst grpc.ServerStream) chan error {
 	ret := make(chan error, 1)
 	go func() {
-		f := &anypb.Any{}
+
 		// This is a bit of a hack, but client to server headers are only readable after first client msg is
 		// received but must be written to server stream before the first msg is flushed.
 		// This is the only place to do it nicely.
@@ -84,7 +85,10 @@ func forwardClientToServer(src grpc.ClientStream, dst grpc.ServerStream) chan er
 			ret <- err
 			return
 		}
+		f := &emptypb.Empty{}
+
 		for {
+
 			if err := src.RecvMsg(f); err != nil {
 				ret <- err // this can be io.EOF which is happy case
 				break
@@ -101,8 +105,9 @@ func forwardClientToServer(src grpc.ClientStream, dst grpc.ServerStream) chan er
 func forwardServerToClient(src grpc.ServerStream, dst grpc.ClientStream) chan error {
 	ret := make(chan error, 1)
 	go func() {
-		f := &anypb.Any{}
+		f := &emptypb.Empty{}
 		for {
+
 			if err := src.RecvMsg(f); err != nil {
 				ret <- err // this can be io.EOF which is happy case
 				break

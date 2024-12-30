@@ -26,10 +26,27 @@ type Config struct {
 	Partition     int32                `json:"partition" yaml:"partition" switch:"partition_type==='manual'"`
 	PartitionKey  string               `json:"partition_key" yaml:"partition_key" switch:"partition_type==='hash'"`
 	Type          string               `json:"type" yaml:"type" enum:"json,line" label:"输出格式"`
+	ContentResize []ContentResize      `json:"content_resize" yaml:"content_resize" label:"内容截断配置" switch:"type===json"`
+	Filters       []*Filter            `json:"filters" yaml:"conditions" label:"过滤条件"`
 	Formatter     eosc.FormatterConfig `json:"formatter" yaml:"formatter" label:"格式化配置"`
 }
 
+type ContentResize struct {
+	Size   int    `json:"size" label:"内容截断大小" description:"单位：M" default:"10" minimum:"0"`
+	Suffix string `json:"suffix" label:"匹配标签后缀"`
+}
+
+const (
+	equalCondition = "equal"
+)
+
+type Filter struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type ProducerConfig struct {
+	Scopes        []string             `json:"scopes" yaml:"scopes"`
 	Address       []string             `json:"address" yaml:"address"`
 	Topic         string               `json:"topic" yaml:"topic"`
 	Partition     int32                `json:"partition" yaml:"partition"`
@@ -37,7 +54,9 @@ type ProducerConfig struct {
 	PartitionType string               `json:"partition_type" yaml:"partition_type"`
 	Conf          *sarama.Config       `json:"conf" yaml:"conf"`
 	Type          string               `json:"type" yaml:"type"`
+	ContentResize []ContentResize      `json:"content_resize" yaml:"content_resize"`
 	Formatter     eosc.FormatterConfig `json:"formatter" yaml:"formatter"`
+	Filters       []*Filter            `json:"filters" yaml:"conditions" label:"过滤条件"`
 }
 
 func (c *Config) doCheck() (*ProducerConfig, error) {
@@ -102,8 +121,11 @@ func (c *Config) doCheck() (*ProducerConfig, error) {
 	if conf.Type == "" {
 		conf.Type = "line"
 	}
+	p.Scopes = conf.Scopes
 	p.Type = conf.Type
+	p.ContentResize = conf.ContentResize
 	p.Formatter = conf.Formatter
 	p.Conf = s
+	p.Filters = conf.Filters
 	return p, nil
 }

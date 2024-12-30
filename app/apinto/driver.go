@@ -1,13 +1,42 @@
 package main
 
 import (
+	anthropic "github.com/eolinker/apinto/drivers/ai-provider/authropic"
+	"github.com/eolinker/apinto/drivers/ai-provider/baichuan"
+	"github.com/eolinker/apinto/drivers/ai-provider/bedrock"
+	"github.com/eolinker/apinto/drivers/ai-provider/chatglm"
+	"github.com/eolinker/apinto/drivers/ai-provider/cohere"
+	"github.com/eolinker/apinto/drivers/ai-provider/deepseek"
+	"github.com/eolinker/apinto/drivers/ai-provider/fakegpt"
+	"github.com/eolinker/apinto/drivers/ai-provider/fireworks"
+	"github.com/eolinker/apinto/drivers/ai-provider/google"
+	"github.com/eolinker/apinto/drivers/ai-provider/groq"
+	"github.com/eolinker/apinto/drivers/ai-provider/hunyuan"
+	"github.com/eolinker/apinto/drivers/ai-provider/minimax"
+	"github.com/eolinker/apinto/drivers/ai-provider/mistralai"
+	"github.com/eolinker/apinto/drivers/ai-provider/moonshot"
+	"github.com/eolinker/apinto/drivers/ai-provider/novita"
+	"github.com/eolinker/apinto/drivers/ai-provider/nvidia"
+	"github.com/eolinker/apinto/drivers/ai-provider/openAI"
+	"github.com/eolinker/apinto/drivers/ai-provider/openrouter"
+	"github.com/eolinker/apinto/drivers/ai-provider/perfxcloud"
+	"github.com/eolinker/apinto/drivers/ai-provider/spark"
+	"github.com/eolinker/apinto/drivers/ai-provider/stepfun"
+	"github.com/eolinker/apinto/drivers/ai-provider/tongyi"
+	"github.com/eolinker/apinto/drivers/ai-provider/upstage"
+	"github.com/eolinker/apinto/drivers/ai-provider/vertex_ai"
+	"github.com/eolinker/apinto/drivers/ai-provider/wenxin"
+	"github.com/eolinker/apinto/drivers/ai-provider/yi"
+	"github.com/eolinker/apinto/drivers/ai-provider/zhinao"
+	"github.com/eolinker/apinto/drivers/ai-provider/zhipuai"
 	"github.com/eolinker/apinto/drivers/certs"
-	http_counter "github.com/eolinker/apinto/drivers/counter/http"
-	nsq_counter "github.com/eolinker/apinto/drivers/counter/nsq"
 	"github.com/eolinker/apinto/drivers/discovery/consul"
 	"github.com/eolinker/apinto/drivers/discovery/eureka"
 	"github.com/eolinker/apinto/drivers/discovery/nacos"
 	"github.com/eolinker/apinto/drivers/discovery/static"
+	"github.com/eolinker/apinto/drivers/output/loki"
+	auth_interceptor "github.com/eolinker/apinto/drivers/plugins/auth-interceptor"
+	data_mask_strategy "github.com/eolinker/apinto/drivers/strategy/data-mask-strategy"
 
 	"github.com/eolinker/apinto/application/auth"
 	"github.com/eolinker/apinto/drivers/discovery/polaris"
@@ -55,6 +84,7 @@ func driverRegister(extenderRegister eosc.IExtenderDriverRegister) {
 	// 应用
 	app.Register(extenderRegister)
 	auth.Register(extenderRegister)
+	auth_interceptor.Register(extenderRegister)
 
 	// 插件相关
 	plugin_manager.Register(extenderRegister)
@@ -69,6 +99,7 @@ func driverRegister(extenderRegister eosc.IExtenderDriverRegister) {
 	prometheus.Register(extenderRegister)
 	redis.Register(extenderRegister)
 	influxdbv2.Register(extenderRegister)
+	loki.Register(extenderRegister)
 
 	// 服务治理-策略
 	limiting_strategy.Register(extenderRegister)
@@ -76,14 +107,44 @@ func driverRegister(extenderRegister eosc.IExtenderDriverRegister) {
 	grey_strategy.Register(extenderRegister)
 	visit_strategy.Register(extenderRegister)
 	fuse_strategy.Register(extenderRegister)
+	data_mask_strategy.Register(extenderRegister)
 
 	// 编码器
 	protocbuf.Register(extenderRegister)
 
-	// 计数器
-	http_counter.Register(extenderRegister)
-	nsq_counter.Register(extenderRegister)
-
 	// 证书
 	certs.Register(extenderRegister)
+
+	// AI供应商
+	openAI.Register(extenderRegister)
+
+	google.Register(extenderRegister)
+	moonshot.Register(extenderRegister)
+	tongyi.Register(extenderRegister)
+	zhipuai.Register(extenderRegister)
+	fireworks.Register(extenderRegister)
+	novita.Register(extenderRegister)
+	mistralai.Register(extenderRegister)
+
+	anthropic.Register(extenderRegister)
+
+	baichuan.Register(extenderRegister)
+	stepfun.Register(extenderRegister)
+	wenxin.Register(extenderRegister)
+	yi.Register(extenderRegister)
+	perfxcloud.Register(extenderRegister)
+	cohere.Register(extenderRegister)
+	deepseek.Register(extenderRegister)
+	hunyuan.Register(extenderRegister)
+	openrouter.Register(extenderRegister)
+	groq.Register(extenderRegister)
+	upstage.Register(extenderRegister)
+	minimax.Register(extenderRegister)
+	chatglm.Register(extenderRegister)
+	bedrock.Register(extenderRegister)
+	spark.Register(extenderRegister)
+	nvidia.Register(extenderRegister)
+	vertex_ai.Register(extenderRegister)
+	fakegpt.Register(extenderRegister)
+	zhinao.Register(extenderRegister)
 }

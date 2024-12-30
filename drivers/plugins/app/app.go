@@ -16,6 +16,7 @@ import (
 
 type App struct {
 	drivers.WorkerBase
+	forceAuth bool
 }
 
 func (a *App) DoFilter(ctx eocontext.EoContext, next eocontext.IChain) (err error) {
@@ -30,7 +31,7 @@ func (a *App) DoHttpFilter(ctx http_service.IHttpContext, next eocontext.IChain)
 	log.Debug("auth beginning")
 	err := a.auth(ctx)
 	if err != nil {
-		ctx.Response().SetStatus(403, "403")
+		ctx.Response().SetStatus(401, "Unauthorized")
 		ctx.Response().SetBody([]byte(err.Error()))
 		return err
 	}
@@ -74,6 +75,9 @@ func anonymousAppHandler(ctx http_service.IHttpContext) (bool, error) {
 func (a *App) auth(ctx http_service.IHttpContext) error {
 	log.Debug("start auth...")
 	if appManager.Count() < 1 {
+		if a.forceAuth {
+			return fmt.Errorf("no app to auth")
+		}
 		_, err := anonymousAppHandler(ctx)
 		return err
 	}

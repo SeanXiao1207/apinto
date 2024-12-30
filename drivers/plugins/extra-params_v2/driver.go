@@ -2,7 +2,12 @@ package extra_params_v2
 
 import (
 	"reflect"
+	"strings"
 	"sync"
+
+	"github.com/eolinker/apinto/drivers/plugins/extra-params_v2/dynamic-params/uuid"
+
+	hmac_sha256 "github.com/eolinker/apinto/drivers/plugins/extra-params_v2/dynamic-params/hmac-sha256"
 
 	"github.com/eolinker/apinto/drivers/plugins/extra-params_v2/dynamic-params/concat"
 
@@ -51,11 +56,13 @@ func Create(id, name string, conf *Config, workers map[eosc.RequireId]eosc.IWork
 		md5.Register()
 		timestamp.Register()
 		concat.Register()
+		hmac_sha256.Register()
+		uuid.Register()
 	})
 	ep := &executor{
 		WorkerBase:      drivers.Worker(id, name),
 		baseParam:       generateBaseParam(conf.Params),
-		requestBodyType: conf.RequestBodyType,
+		requestBodyType: strings.ToLower(conf.RequestBodyType),
 		errorType:       conf.ErrorType,
 	}
 

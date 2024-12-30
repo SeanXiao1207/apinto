@@ -1,11 +1,13 @@
 package websocket
 
 import (
-	"github.com/eolinker/eosc/eocontext"
-	"github.com/eolinker/eosc/log"
+	"crypto/tls"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/eolinker/eosc/eocontext"
+	"github.com/eolinker/eosc/log"
 
 	"github.com/fasthttp/websocket"
 )
@@ -13,6 +15,9 @@ import (
 var dialer = &websocket.Dialer{
 	Proxy:            http.ProxyFromEnvironment,
 	HandshakeTimeout: 45 * time.Second,
+	TLSClientConfig: &tls.Config{
+		InsecureSkipVerify: true,
+	},
 }
 
 var skipHeaders = []string{
@@ -24,9 +29,9 @@ var skipHeaders = []string{
 	"Sec-Websocket-Protocol",
 }
 
-func DialWithTimeout(node eocontext.INode, path string, query string, header http.Header, timeout time.Duration) (*websocket.Conn, *http.Response, error) {
+func DialWithTimeout(node eocontext.INode, scheme, path string, query string, header http.Header, timeout time.Duration) (*websocket.Conn, *http.Response, error) {
 	log.Debug("node: ", node.Addr())
-	u := url.URL{Scheme: "ws", Host: node.Addr(), Path: path, RawQuery: query}
+	u := url.URL{Scheme: scheme, Host: node.Addr(), Path: path, RawQuery: query}
 	dialer.HandshakeTimeout = timeout
 	for _, key := range skipHeaders {
 		header.Del(key)

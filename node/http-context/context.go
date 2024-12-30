@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
+	"strings"
 	"time"
 
 	http_entry "github.com/eolinker/apinto/entries/http-entry"
@@ -134,26 +136,52 @@ func (ctx *HttpContext) SendTo(scheme string, node eoscContext.INode, timeout ti
 
 	host := node.Addr()
 	request := ctx.proxyRequest.Request()
-
-	passHost, targetHost := ctx.GetUpstreamHostHandler().PassHost()
-	switch passHost {
-	case eoscContext.PassHost:
-	case eoscContext.NodeHost:
+	rewriteHost := string(request.Host())
+	upstreamHost := ctx.GetUpstreamHostHandler()
+	if upstreamHost != nil {
+		passHost, targetHost := upstreamHost.PassHost()
+		switch passHost {
+		case eoscContext.PassHost:
+		case eoscContext.NodeHost:
+			rewriteHost = host
+			request.URI().SetHost(host)
+			//ctx.proxyRequest.Header().SetHost(targetHost)
+		case eoscContext.ReWriteHost:
+			rewriteHost = targetHost
+			request.URI().SetHost(targetHost)
+			//ctx.proxyRequest.Header().SetHost(targetHost)
+		}
+	} else {
+		rewriteHost = host
 		request.URI().SetHost(host)
-	case eoscContext.ReWriteHost:
-		request.URI().SetHost(targetHost)
 	}
 
 	beginTime := time.Now()
-	ctx.response.responseError = fasthttp_client.ProxyTimeout(scheme, node, request, &ctx.fastHttpRequestCtx.Response, timeout)
-	agent := newRequestAgent(&ctx.proxyRequest, host, scheme, beginTime, time.Now())
+	ctx.response.responseError = fasthttp_client.ProxyTimeout(scheme, rewriteHost, node, request, &ctx.fastHttpRequestCtx.Response, timeout)
+	var responseHeader fasthttp.ResponseHeader
+	if ctx.response.Response != nil {
+		responseHeader = ctx.response.Response.Header
+	}
+
+	agent := newRequestAgent(&ctx.proxyRequest, host, scheme, responseHeader, beginTime, time.Now())
+
 	if ctx.response.responseError != nil {
 		agent.setStatusCode(504)
 	} else {
 		ctx.response.ResponseHeader.refresh()
+
 		agent.setStatusCode(ctx.fastHttpRequestCtx.Response.StatusCode())
 	}
+
+	if ctx.fastHttpRequestCtx.Response.RemoteAddr() != nil {
+		ip, port := parseAddr(ctx.fastHttpRequestCtx.Response.RemoteAddr().String())
+		agent.setRemoteIP(ip)
+		agent.setRemotePort(port)
+		ctx.response.remoteIP = ip
+		ctx.response.remotePort = port
+	}
 	agent.responseBody = string(ctx.response.Response.Body())
+
 	agent.setResponseLength(ctx.fastHttpRequestCtx.Response.Header.ContentLength())
 
 	ctx.proxyRequests = append(ctx.proxyRequests, agent)
@@ -285,4 +313,13 @@ func (ctx *HttpContext) FastFinish() {
 	ctx.fastHttpRequestCtx = nil
 	pool.Put(ctx)
 
+}
+
+func parseAddr(addr string) (string, int) {
+	a := strings.Split(addr, ":")
+	port := 0
+	if len(a) > 1 {
+		port, _ = strconv.Atoi(a[1])
+	}
+	return a[0], port
 }
